@@ -19,7 +19,9 @@ def conlleval(label_predict, label_path, metric_path):
                 line.append("{} {} {}\n".format(char, tag, tag_))
             line.append("\n")
         fw.writelines(line)
-    os.system("perl {} < {} > {}".format(eval_perl, label_path, metric_path))
+    command = "perl {} < {} > {}".format(eval_perl, label_path, metric_path)
+    print(command)
+    os.system(command)
     with open(metric_path) as fr:
         metrics = [line.strip() for line in fr]
     return metrics

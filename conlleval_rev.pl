@@ -91,7 +91,7 @@ while (<STDIN>) {
    if (@features == 0 or 
        $features[0] eq $boundary) { @features = ($boundary,"0","0"); }
    if (@features < 2) { 
-      die "conlleval: unexpected number of features in line $line\n"; 
+      die "conlleval: unexpected number of features in line $line\n";
    }
    if ($raw) {
       if ($features[$#features] eq $oTag) { $features[$#features] = "0"; } 

@@ -3,9 +3,10 @@ import numpy as np
 
 ## tags, BIO
 tag2label = {"O": 0,
-             "B-PER": 1, "I-PER": 2,
-             "B-LOC": 3, "I-LOC": 4,
-             "B-ORG": 5, "I-ORG": 6
+             # "B-PER": 1, "I-PER": 2,
+             # "B-LOC": 3, "I-LOC": 4,
+             # "B-ORG": 5, "I-ORG": 6
+             "B-LBL": 1, "I-LBL": 2
              }
 
 
@@ -21,6 +22,7 @@ def read_corpus(corpus_path):
     sent_, tag_ = [], []
     for line in lines:
         if line != '\n':
+            # print(line)
             [char, label] = line.strip().split()
             sent_.append(char)
             tag_.append(label)
@@ -81,8 +83,8 @@ def sentence2id(sent, word2id):
     for word in sent:
         if word.isdigit():
             word = '<NUM>'
-        elif ('\u0041' <= word <= '\u005a') or ('\u0061' <= word <= '\u007a'):
-            word = '<ENG>'
+        # elif ('\u0041' <= word <= '\u005a') or ('\u0061' <= word <= '\u007a'):
+        #     word = '<ENG>'
         if word not in word2id:
             word = '<UNK>'
         sentence_id.append(word2id[word])
