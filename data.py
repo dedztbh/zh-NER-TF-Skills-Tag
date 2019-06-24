@@ -116,14 +116,16 @@ def random_embedding(vocab, embedding_dim):
     return embedding_mat
 
 
-def pad_sequences(sequences, pad_mark=0):
+def pad_sequences(sequences, pad_mark=0, max_len=None):
     """
 
     :param sequences:
     :param pad_mark:
+    :param max_len:
     :return:
     """
-    max_len = max(map(lambda x : len(x), sequences))
+    if max_len is None:
+        max_len = max(map(lambda x : len(x), sequences))
     seq_list, seq_len_list = [], []
     for seq in sequences:
         seq = list(seq)
@@ -160,4 +162,3 @@ def batch_yield(data, batch_size, vocab, tag2label, shuffle=False):
 
     if len(seqs) != 0:
         yield seqs, labels
-

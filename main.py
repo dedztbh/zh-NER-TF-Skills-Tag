@@ -68,32 +68,32 @@ log_path = os.path.join(result_path, "log.txt")
 paths['log_path'] = log_path
 get_logger(log_path).info(str(args))
 
-# ## training model
-# if args.mode == 'train':
-#     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
-#     model.build_graph()
-#
-#     ## hyperparameters-tuning, split train/dev
-#     # dev_data = train_data[:5000]; dev_size = len(dev_data)
-#     # train_data = train_data[5000:]; train_size = len(train_data)
-#     # print("train data: {0}\ndev data: {1}".format(train_size, dev_size))
-#     # model.train(train=train_data, dev=dev_data)
-#
-#     ## train model on the whole training data
-#     print("train data: {}".format(len(train_data)))
-#     model.train(train=train_data, dev=test_data)  # use test_data as the dev_data to see overfitting phenomena
-#
-# ## testing model
-# elif args.mode == 'test':
-#     ckpt_file = tf.train.latest_checkpoint(model_path)
-#     print(ckpt_file)
-#     paths['model_path'] = ckpt_file
-#     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
-#     model.build_graph()
-#     print("test data: {}".format(test_size))
-#     model.test(test_data)
-#
-# ## demo
+## training model
+if args.mode == 'train':
+    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
+    model.build_graph()
+
+    ## hyperparameters-tuning, split train/dev
+    # dev_data = train_data[:5000]; dev_size = len(dev_data)
+    # train_data = train_data[5000:]; train_size = len(train_data)
+    # print("train data: {0}\ndev data: {1}".format(train_size, dev_size))
+    # model.train(train=train_data, dev=dev_data)
+
+    ## train model on the whole training data
+    print("train data: {}".format(len(train_data)))
+    model.train(train=train_data, dev=test_data)  # use test_data as the dev_data to see overfitting phenomena
+
+## testing model
+elif args.mode == 'test':
+    ckpt_file = tf.train.latest_checkpoint(model_path)
+    print(ckpt_file)
+    paths['model_path'] = ckpt_file
+    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
+    model.build_graph()
+    print("test data: {}".format(test_size))
+    model.test(test_data)
+
+## demo
 # elif args.mode == 'demo':
 #     ckpt_file = tf.train.latest_checkpoint(model_path)
 #     print(ckpt_file)
@@ -118,16 +118,16 @@ get_logger(log_path).info(str(args))
 #                 print('PER: {}\nLOC: {}\nORG: {}'.format(PER, LOC, ORG))
 
 
-def train():
-    args.batch_size = 512
-    args.epoch = 2
-    print('aaa')
-    print(args)
-    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
-    model.build_graph()
-    print("train data: {}".format(len(train_data)))
-    model.train(train=train_data, dev=test_data)
-
-
-if __name__ == '__main__':
-    train()
+# def train():
+#     args.epoch = 10
+#     print('aaa')
+#     print(args)
+#     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
+#     model.build_graph()
+#     print("train data: {}".format(len(train_data)))
+#     model.train(train=train_data, dev=test_data)
+#
+#
+# if __name__ == '__main__':
+#     print('__name__ is __main__')
+#     train()

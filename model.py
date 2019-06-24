@@ -57,7 +57,7 @@ class BiLSTM_CRF(object):
             word_embeddings = tf.nn.embedding_lookup(params=_word_embeddings,
                                                      ids=self.word_ids,
                                                      name="word_embeddings")
-        self.word_embeddings =  tf.nn.dropout(word_embeddings, self.dropout_pl)
+        self.word_embeddings = tf.nn.dropout(word_embeddings, self.dropout_pl)
 
     def biLSTM_layer_op(self):
         with tf.variable_scope("bi-lstm"):
@@ -84,7 +84,7 @@ class BiLSTM_CRF(object):
                                 dtype=tf.float32)
 
             s = tf.shape(output)
-            output = tf.reshape(output, [-1, 2*self.hidden_dim])
+            output = tf.reshape(output, [-1, 2 * self.hidden_dim])
             pred = tf.matmul(output, W) + b
 
             self.logits = tf.reshape(pred, [-1, s[1], self.num_tags])
@@ -92,8 +92,8 @@ class BiLSTM_CRF(object):
     def loss_op(self):
         if self.CRF:
             log_likelihood, self.transition_params = crf_log_likelihood(inputs=self.logits,
-                                                                   tag_indices=self.labels,
-                                                                   sequence_lengths=self.sequence_lengths)
+                                                                        tag_indices=self.labels,
+                                                                        sequence_lengths=self.sequence_lengths)
             self.loss = -tf.reduce_mean(log_likelihood)
 
         else:
@@ -222,21 +222,27 @@ class BiLSTM_CRF(object):
         label_list_dev, seq_len_list_dev = self.dev_one_epoch(sess, dev)
         self.evaluate(label_list_dev, seq_len_list_dev, dev, epoch)
 
-    def get_feed_dict(self, seqs, labels=None, lr=None, dropout=None):
+    def get_feed_dict(self, seqs, labels=None, lr=None, dropout=None, no_window=False):
         """
 
         :param seqs:
         :param labels:
         :param lr:
         :param dropout:
+        :param no_window:
         :return: feed_dict
         """
-        word_ids, seq_len_list = pad_sequences(seqs, pad_mark=0)
+        global labels_
+        if no_window:
+            word_ids, seq_len_list = pad_sequences(seqs, pad_mark=0)
+        else:
+            word_ids, labels_, seq_len_list = to_sliding_window(seqs, labels, self.tag2label)
 
         feed_dict = {self.word_ids: word_ids,
                      self.sequence_lengths: seq_len_list}
         if labels is not None:
-            labels_, _ = pad_sequences(labels, pad_mark=0)
+            if no_window:
+                labels_, _ = pad_sequences(labels, pad_mark=0)
             feed_dict[self.labels] = labels_
         if lr is not None:
             feed_dict[self.lr_pl] = lr
@@ -267,7 +273,7 @@ class BiLSTM_CRF(object):
         :return: label_list
                  seq_len_list
         """
-        feed_dict, seq_len_list = self.get_feed_dict(seqs, dropout=1.0)
+        feed_dict, seq_len_list = self.get_feed_dict(seqs, dropout=1.0, no_window=True)
 
         if self.CRF:
             logits, transition_params = sess.run([self.logits, self.transition_params],
@@ -299,16 +305,89 @@ class BiLSTM_CRF(object):
         for label_, (sent, tag) in zip(label_list, data):
             tag_ = [label2tag[label__] for label__ in label_]
             sent_res = []
-            if  len(label_) != len(sent):
+            if len(label_) != len(sent):
                 print(sent)
                 print(len(label_))
                 print(tag)
             for i in range(len(sent)):
                 sent_res.append([sent[i], tag[i], tag_[i]])
             model_predict.append(sent_res)
-        epoch_num = str(epoch+1) if epoch is not None else 'test'
+        epoch_num = str(epoch + 1) if epoch is not None else 'test'
         label_path = os.path.join(self.result_path, 'label_' + epoch_num)
         metric_path = os.path.join(self.result_path, 'result_metric_' + epoch_num)
         for _ in conlleval(model_predict, label_path, metric_path):
             self.logger.info(_)
 
+
+def to_sliding_window(sequences, labels=None, tag2label=None, window_size=10, all_O_dropout_rate=0.9, strides=1,
+                      pad_mark=0):
+    if tag2label is None:
+        tag2label = {"O": 0}
+    seqs_result = []
+    seq_lens_result = []
+    if labels is not None:
+        negative_label = tag2label["O"]
+        labels_result = []
+        for seq, label in zip(sequences, labels):
+            if (len(seq)) <= window_size:
+                seq_list, _ = pad_sequences([seq], pad_mark=pad_mark, max_len=window_size)
+                seqs_result += seq_list
+                label_list, _ = pad_sequences([label], pad_mark=pad_mark, max_len=window_size)
+                labels_result += label_list
+                seq_lens_result.append(len(seq))
+            else:
+                seq_len = len(seq)
+                i = 0
+                while i + window_size < seq_len:
+                    seq_window = seq[i:i + window_size]
+                    label_window = label[i:i + window_size]
+                    if not (all(v == negative_label for v in label_window)
+                            and np.random.rand() <= all_O_dropout_rate):
+                        seqs_result.append(seq_window)
+                        labels_result.append(label_window)
+                        seq_lens_result.append(window_size)
+                    i += strides
+                if i + window_size > seq_len:
+                    seq_window = seq[seq_len - window_size:seq_len]
+                    label_window = label[seq_len - window_size:seq_len]
+                    if not (all(v == negative_label for v in label_window)
+                            and np.random.rand() <= all_O_dropout_rate):
+                        seqs_result.append(seq_window)
+                        labels_result.append(label_window)
+                        seq_lens_result.append(window_size)
+        return seqs_result, labels_result, seq_lens_result
+    else:
+        for seq in sequences:
+            if (len(seq)) <= window_size:
+                seq_list, _ = pad_sequences([seq], pad_mark=pad_mark, max_len=window_size)
+                seqs_result += seq_list
+                seq_lens_result.append(len(seq))
+            else:
+                seq_len = len(seq)
+                i = 0
+                while i + window_size < seq_len:
+                    seq_window = seq[i:i + window_size]
+                    seqs_result.append(seq_window)
+                    i += strides
+                if i + window_size > seq_len:
+                    seq_window = seq[seq_len - window_size:seq_len]
+                    seqs_result.append(seq_window)
+                    seq_lens_result.append(window_size)
+        return seqs_result, None, seq_lens_result
+
+
+# if __name__ == "__main__":
+#     seqs = [
+#         list("abcdefghijk"),
+#         list("xyz"),
+#         list("0123456789")
+#     ]
+#
+#     labels = [
+#         [0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0],
+#         [0, 0, 0],
+#         [0, 0, 0, 0, 0, 0, 0, 0, 1]
+#     ]
+#
+#     res = to_sliding_window(seqs, labels, window_size=3, strides=2)
+#     print(res)
