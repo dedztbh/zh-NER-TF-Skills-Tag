@@ -31,6 +31,8 @@ class BiLSTM_CRF(object):
         self.result_path = paths['result_path']
         self.config = config
 
+        self.window_size = args.window_size
+
     def build_graph(self):
         self.add_placeholders()
         self.lookup_layer_op()
@@ -202,8 +204,8 @@ class BiLSTM_CRF(object):
         batches = batch_yield(train, self.batch_size, self.vocab, self.tag2label, shuffle=self.shuffle)
         for step, (seqs, labels) in enumerate(batches):
 
-            # sys.stdout.write(' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
-            print(' processing: {} batch / {} batches.'.format(step + 1, num_batches))
+            sys.stdout.write(' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
+            # print(' processing: {} batch / {} batches.'.format(step + 1, num_batches))
             step_num = epoch * num_batches + step + 1
             feed_dict, _ = self.get_feed_dict(seqs, labels, self.lr, self.dropout_keep_prob)
             _, loss_train, summary, step_num_ = sess.run([self.train_op, self.loss, self.merged, self.global_step],
@@ -236,7 +238,8 @@ class BiLSTM_CRF(object):
         if no_window:
             word_ids, seq_len_list = pad_sequences(seqs, pad_mark=0)
         else:
-            word_ids, labels_, seq_len_list = to_sliding_window(seqs, labels, self.tag2label)
+            word_ids, labels_, seq_len_list = to_sliding_window(seqs, labels, self.tag2label,
+                                                                window_size=self.window_size)
 
         feed_dict = {self.word_ids: word_ids,
                      self.sequence_lengths: seq_len_list}
@@ -374,7 +377,6 @@ def to_sliding_window(sequences, labels=None, tag2label=None, window_size=10, al
                     seqs_result.append(seq_window)
                     seq_lens_result.append(window_size)
         return seqs_result, None, seq_lens_result
-
 
 # if __name__ == "__main__":
 #     seqs = [

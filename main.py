@@ -31,6 +31,9 @@ parser.add_argument('--embedding_dim', type=int, default=300, help='random init 
 parser.add_argument('--shuffle', type=str2bool, default=True, help='shuffle training data before each epoch')
 parser.add_argument('--mode', type=str, default='demo', help='train/test/demo')
 parser.add_argument('--demo_model', type=str, default='1521112368', help='model for test and demo')
+
+parser.add_argument('--window_size', type=int, default=10, help='window_size')
+
 args = parser.parse_args()
 
 ## get char embeddings
@@ -46,7 +49,7 @@ else:
 train_path = os.path.join('.', args.train_data, 'train_data')
 test_path = os.path.join('.', args.test_data, 'test_data')
 train_data = read_corpus(train_path)
-test_data = read_corpus(test_path);
+test_data = read_corpus(test_path)
 test_size = len(test_data)
 
 ## paths setting
