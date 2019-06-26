@@ -7,6 +7,7 @@ from tensorflow.contrib.crf import viterbi_decode
 from data import pad_sequences, batch_yield
 from utils import get_logger
 from eval import conlleval
+import re
 
 
 class BiLSTM_CRF(object):
@@ -32,6 +33,9 @@ class BiLSTM_CRF(object):
         self.config = config
 
         self.window_size = args.window_size
+        self.strides = args.strides
+        self.all_o_dropout = args.all_o_dropout
+        self.resume = args.resume
 
     def build_graph(self):
         self.add_placeholders()
@@ -40,6 +44,7 @@ class BiLSTM_CRF(object):
         self.softmax_pred_op()
         self.loss_op()
         self.trainstep_op()
+        self.metrics_op()
         self.init_op()
 
     def add_placeholders(self):
@@ -107,6 +112,17 @@ class BiLSTM_CRF(object):
 
         tf.summary.scalar("loss", self.loss)
 
+    def metrics_op(self):
+        accuracy = tf.Variable(0.0, dtype=tf.float32)
+        precision = tf.Variable(0.0, dtype=tf.float32)
+        recall = tf.Variable(0.0, dtype=tf.float32)
+        FB1 = tf.Variable(0.0, dtype=tf.float32)
+        tf.summary.scalar('accuracy', accuracy)
+        tf.summary.scalar('precision', precision)
+        tf.summary.scalar('recall', recall)
+        tf.summary.scalar('FB1', FB1)
+        self.metrics = [accuracy, precision, recall, FB1]
+
     def softmax_pred_op(self):
         if not self.CRF:
             self.labels_softmax_ = tf.argmax(self.logits, axis=-1)
@@ -153,14 +169,24 @@ class BiLSTM_CRF(object):
         :param dev:
         :return:
         """
-        saver = tf.train.Saver(tf.global_variables())
 
-        with tf.Session(config=self.config) as sess:
-            sess.run(self.init_op)
-            self.add_summary(sess)
+        if self.resume > 0:
+            saver = tf.train.Saver()
+            with tf.Session(config=self.config) as sess:
+                saver.restore(sess, self.model_path)
+                self.add_summary(sess)
+                for epoch in range(self.epoch_num):
+                    self.run_one_epoch(sess, train, dev, self.tag2label, epoch + self.resume, saver)
 
-            for epoch in range(self.epoch_num):
-                self.run_one_epoch(sess, train, dev, self.tag2label, epoch, saver)
+        else:
+            saver = tf.train.Saver(tf.global_variables())
+            with tf.Session(config=self.config) as sess:
+
+                sess.run(self.init_op)
+                self.add_summary(sess)
+
+                for epoch in range(self.epoch_num):
+                    self.run_one_epoch(sess, train, dev, self.tag2label, epoch, saver)
 
     def test(self, test):
         saver = tf.train.Saver()
@@ -168,7 +194,7 @@ class BiLSTM_CRF(object):
             self.logger.info('=========== testing ===========')
             saver.restore(sess, self.model_path)
             label_list, seq_len_list = self.dev_one_epoch(sess, test)
-            self.evaluate(label_list, seq_len_list, test)
+            self.evaluate(sess, label_list, seq_len_list, test)
 
     def demo_one(self, sess, sent):
         """
@@ -216,13 +242,14 @@ class BiLSTM_CRF(object):
                                                                                 loss_train, step_num))
 
             self.file_writer.add_summary(summary, step_num)
+            self.file_writer.flush()
 
             if step + 1 == num_batches:
                 saver.save(sess, self.model_path, global_step=step_num)
 
         self.logger.info('===========validation / test===========')
         label_list_dev, seq_len_list_dev = self.dev_one_epoch(sess, dev)
-        self.evaluate(label_list_dev, seq_len_list_dev, dev, epoch)
+        self.evaluate(sess, label_list_dev, seq_len_list_dev, dev, epoch)
 
     def get_feed_dict(self, seqs, labels=None, lr=None, dropout=None, no_window=False):
         """
@@ -238,8 +265,10 @@ class BiLSTM_CRF(object):
         if no_window:
             word_ids, seq_len_list = pad_sequences(seqs, pad_mark=0)
         else:
-            word_ids, labels_, seq_len_list = to_sliding_window(seqs, labels, self.tag2label,
-                                                                window_size=self.window_size)
+            word_ids, labels_, seq_len_list = to_sliding_window(seqs, labels=labels, tag2label=self.tag2label,
+                                                                window_size=self.window_size,
+                                                                strides=self.strides,
+                                                                all_O_dropout_rate=self.all_o_dropout)
 
         feed_dict = {self.word_ids: word_ids,
                      self.sequence_lengths: seq_len_list}
@@ -291,7 +320,7 @@ class BiLSTM_CRF(object):
             label_list = sess.run(self.labels_softmax_, feed_dict=feed_dict)
             return label_list, seq_len_list
 
-    def evaluate(self, label_list, seq_len_list, data, epoch=None):
+    def evaluate(self, sess, label_list, seq_len_list, data, epoch=None):
         """
 
         :param label_list:
@@ -318,11 +347,23 @@ class BiLSTM_CRF(object):
         epoch_num = str(epoch + 1) if epoch is not None else 'test'
         label_path = os.path.join(self.result_path, 'label_' + epoch_num)
         metric_path = os.path.join(self.result_path, 'result_metric_' + epoch_num)
-        for _ in conlleval(model_predict, label_path, metric_path):
+
+        lines = conlleval(model_predict, label_path, metric_path)
+
+        for _ in lines:
             self.logger.info(_)
 
+        # accuracy, precision, recall, FB1
+        metric_list = [float(s) / 100 for s in re.findall(
+            r'accuracy: {2}([0-9.]+)%; precision: {2}([0-9.]+)%; recall: {2}([0-9.]+)%; FB1: {2}([0-9.]+)',
+            lines[1])[0]]
 
-def to_sliding_window(sequences, labels=None, tag2label=None, window_size=10, all_O_dropout_rate=0.9, strides=1,
+        sess.run([variable.assign(value) for variable, value in zip(self.metrics, metric_list)])
+
+        return metric_list
+
+
+def to_sliding_window(sequences, window_size, all_O_dropout_rate, strides, labels=None, tag2label=None,
                       pad_mark=0):
     if tag2label is None:
         tag2label = {"O": 0}
@@ -377,19 +418,3 @@ def to_sliding_window(sequences, labels=None, tag2label=None, window_size=10, al
                     seqs_result.append(seq_window)
                     seq_lens_result.append(window_size)
         return seqs_result, None, seq_lens_result
-
-# if __name__ == "__main__":
-#     seqs = [
-#         list("abcdefghijk"),
-#         list("xyz"),
-#         list("0123456789")
-#     ]
-#
-#     labels = [
-#         [0, 0, 0, 1, 2, 0, 0, 0, 0, 0, 0],
-#         [0, 0, 0],
-#         [0, 0, 0, 0, 0, 0, 0, 0, 1]
-#     ]
-#
-#     res = to_sliding_window(seqs, labels, window_size=3, strides=2)
-#     print(res)

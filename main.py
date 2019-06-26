@@ -29,10 +29,13 @@ parser.add_argument('--pretrain_embedding', type=str, default='random',
                     help='use pretrained char embedding or init it randomly')
 parser.add_argument('--embedding_dim', type=int, default=300, help='random init char embedding_dim')
 parser.add_argument('--shuffle', type=str2bool, default=True, help='shuffle training data before each epoch')
-parser.add_argument('--mode', type=str, default='demo', help='train/test/demo')
+parser.add_argument('--mode', type=str, default='train', help='train/test/demo')
 parser.add_argument('--demo_model', type=str, default='1521112368', help='model for test and demo')
 
 parser.add_argument('--window_size', type=int, default=10, help='window_size')
+parser.add_argument('--strides', type=int, default=1, help='strides')
+parser.add_argument('--all_o_dropout', type=float, default=0.9, help='all-o-dropout rate')
+parser.add_argument('--resume', type=int, default=0, help='resume training @epoch, if already trained x, use x + 1')
 
 args = parser.parse_args()
 
@@ -45,16 +48,16 @@ else:
     embeddings = np.array(np.load(embedding_path), dtype='float32')
 
 ## read corpus and get training data
-# if args.mode != 'demo':
-train_path = os.path.join('.', args.train_data, 'train_data')
-test_path = os.path.join('.', args.test_data, 'test_data')
-train_data = read_corpus(train_path)
-test_data = read_corpus(test_path)
-test_size = len(test_data)
+if args.mode != 'demo':
+    train_path = os.path.join('.', args.train_data, 'train_data')
+    test_path = os.path.join('.', args.test_data, 'test_data')
+    train_data = read_corpus(train_path)
+    test_data = read_corpus(test_path)
+    test_size = len(test_data)
 
 ## paths setting
 paths = {}
-timestamp = str(int(time.time())) if args.mode == 'train' else args.demo_model
+timestamp = str(int(time.time())) if args.mode == 'train' and args.resume <= 0 else args.demo_model
 output_path = os.path.join('.', args.train_data + "_save", timestamp)
 if not os.path.exists(output_path): os.makedirs(output_path)
 summary_path = os.path.join(output_path, "summaries")
@@ -73,6 +76,11 @@ get_logger(log_path).info(str(args))
 
 ## training model
 if args.mode == 'train':
+    if args.resume > 0:
+        ckpt_file = tf.train.latest_checkpoint(model_path)
+        print(ckpt_file)
+        paths['model_path'] = ckpt_file
+
     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
     model.build_graph()
 
@@ -97,40 +105,25 @@ elif args.mode == 'test':
     model.test(test_data)
 
 ## demo
-# elif args.mode == 'demo':
-#     ckpt_file = tf.train.latest_checkpoint(model_path)
-#     print(ckpt_file)
-#     paths['model_path'] = ckpt_file
-#     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
-#     model.build_graph()
-#     saver = tf.train.Saver()
-#     with tf.Session(config=config) as sess:
-#         print('============= demo =============')
-#         saver.restore(sess, ckpt_file)
-#         while (1):
-#             print('Please input your sentence:')
-#             demo_sent = input()
-#             if demo_sent == '' or demo_sent.isspace():
-#                 print('See you next time!')
-#                 break
-#             else:
-#                 demo_sent = list(demo_sent.strip())
-#                 demo_data = [(demo_sent, ['O'] * len(demo_sent))]
-#                 tag = model.demo_one(sess, demo_data)
-#                 PER, LOC, ORG = get_entity(tag, demo_sent)
-#                 print('PER: {}\nLOC: {}\nORG: {}'.format(PER, LOC, ORG))
-
-
-# def train():
-#     args.epoch = 10
-#     print('aaa')
-#     print(args)
-#     model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
-#     model.build_graph()
-#     print("train data: {}".format(len(train_data)))
-#     model.train(train=train_data, dev=test_data)
-#
-#
-# if __name__ == '__main__':
-#     print('__name__ is __main__')
-#     train()
+elif args.mode == 'demo':
+    ckpt_file = tf.train.latest_checkpoint(model_path)
+    print(ckpt_file)
+    paths['model_path'] = ckpt_file
+    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config)
+    model.build_graph()
+    saver = tf.train.Saver()
+    with tf.Session(config=config) as sess:
+        print('============= demo =============')
+        saver.restore(sess, ckpt_file)
+        while 1:
+            print('Please input your sentence:')
+            demo_sent = input()
+            if demo_sent == '' or demo_sent.isspace():
+                print('See you next time!')
+                break
+            else:
+                demo_sent = list(demo_sent.strip())
+                demo_data = [(demo_sent, ['O'] * len(demo_sent))]
+                tag = model.demo_one(sess, demo_data)
+                LBL = get_entity(tag, demo_sent)
+                print('LBL: {}'.format(LBL))

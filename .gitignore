@@ -1,4 +1,5 @@
 */.DS_Store
 .DS_Store
 .idea/
-data_path/
+data_path/train_data
+data_path/test_data
