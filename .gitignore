@@ -3,3 +3,4 @@
 .idea/
 data_path/train_data
 data_path/test_data
+data_path/tag2label.pkl

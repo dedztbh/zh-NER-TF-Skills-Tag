@@ -1,13 +1,10 @@
 import sys, pickle, os, random
 import numpy as np
+import pickle
 
 ## tags, BIO
-tag2label = {"O": 0,
-             # "B-PER": 1, "I-PER": 2,
-             # "B-LOC": 3, "I-LOC": 4,
-             # "B-ORG": 5, "I-ORG": 6
-             "B-LBL": 1, "I-LBL": 2
-             }
+with open('data_path/tag2label.pkl', 'rb') as f:
+    tag2label = pickle.load(f)
 
 
 def read_corpus(corpus_path):

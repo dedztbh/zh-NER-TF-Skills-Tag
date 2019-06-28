@@ -113,15 +113,13 @@ class BiLSTM_CRF(object):
         tf.summary.scalar("loss", self.loss)
 
     def metrics_op(self):
-        accuracy = tf.Variable(0.0, dtype=tf.float32)
         precision = tf.Variable(0.0, dtype=tf.float32)
         recall = tf.Variable(0.0, dtype=tf.float32)
         FB1 = tf.Variable(0.0, dtype=tf.float32)
-        tf.summary.scalar('accuracy', accuracy)
         tf.summary.scalar('precision', precision)
         tf.summary.scalar('recall', recall)
         tf.summary.scalar('FB1', FB1)
-        self.metrics = [accuracy, precision, recall, FB1]
+        self.metrics = [precision, recall, FB1]
 
     def softmax_pred_op(self):
         if not self.CRF:
@@ -233,7 +231,8 @@ class BiLSTM_CRF(object):
             sys.stdout.write(' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
             # print(' processing: {} batch / {} batches.'.format(step + 1, num_batches))
             step_num = epoch * num_batches + step + 1
-            feed_dict, _ = self.get_feed_dict(seqs, labels, self.lr, self.dropout_keep_prob)
+            feed_dict, _ = self.get_feed_dict(seqs, labels, self.lr, self.dropout_keep_prob,
+                                              no_window=self.window_size < 1)
             _, loss_train, summary, step_num_ = sess.run([self.train_op, self.loss, self.merged, self.global_step],
                                                          feed_dict=feed_dict)
             if step + 1 == 1 or (step + 1) % 300 == 0 or step + 1 == num_batches:
@@ -353,10 +352,12 @@ class BiLSTM_CRF(object):
         for _ in lines:
             self.logger.info(_)
 
-        # accuracy, precision, recall, FB1
+        lbl_line = next(filter(lambda l: 'LBL' in l, lines))
+
+        # precision, recall, FB1
         metric_list = [float(s) / 100 for s in re.findall(
-            r'accuracy: {2}([0-9.]+)%; precision: {2}([0-9.]+)%; recall: {2}([0-9.]+)%; FB1: {2}([0-9.]+)',
-            lines[1])[0]]
+            r'LBL: precision: {2}([0-9.]+)%; recall: {2}([0-9.]+)%; FB1: {2}([0-9.]+)',
+            lbl_line)[0]]
 
         sess.run([variable.assign(value) for variable, value in zip(self.metrics, metric_list)])
 
