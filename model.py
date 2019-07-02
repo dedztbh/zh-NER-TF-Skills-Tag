@@ -169,7 +169,7 @@ class BiLSTM_CRF(object):
         """
 
         if self.resume > 0:
-            saver = tf.train.Saver()
+            saver = tf.train.Saver(max_to_keep=None)
             with tf.Session(config=self.config) as sess:
                 saver.restore(sess, self.model_path)
                 self.add_summary(sess)
@@ -177,7 +177,7 @@ class BiLSTM_CRF(object):
                     self.run_one_epoch(sess, train, dev, self.tag2label, epoch + self.resume, saver)
 
         else:
-            saver = tf.train.Saver(tf.global_variables())
+            saver = tf.train.Saver(max_to_keep=None)
             with tf.Session(config=self.config) as sess:
 
                 sess.run(self.init_op)
@@ -356,7 +356,7 @@ class BiLSTM_CRF(object):
 
         # precision, recall, FB1
         metric_list = [float(s) / 100 for s in re.findall(
-            r'LBL: precision: {2}([0-9.]+)%; recall: {2}([0-9.]+)%; FB1: {2}([0-9.]+)',
+            r'LBL: precision: {2,}([0-9.]+)%; recall: {2,}([0-9.]+)%; FB1: {2,}([0-9.]+)',
             lbl_line)[0]]
 
         sess.run([variable.assign(value) for variable, value in zip(self.metrics, metric_list)])

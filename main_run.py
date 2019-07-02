@@ -1,47 +1,65 @@
-import tensorflow as tf
+import os
+import time
+
 import numpy as np
-import os, argparse, time, random
+import tensorflow as tf
+
+from data import read_corpus, read_dictionary, random_embedding, init_tag2label
+from extract_util import preprocess_input_with_properties
 from model import BiLSTM_CRF
-from utils import str2bool, get_logger, get_entity
-from data import read_corpus, read_dictionary, tag2label, random_embedding
+from utils import get_logger, get_entity
 
 ## Session configuration
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # default: 0
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 0.7  # need ~700MB GPU memory
+config.gpu_options.per_process_gpu_memory_fraction = 1.0  # need ~700MB GPU memory
 
-## hyperparameters
-parser = argparse.ArgumentParser(description='BiLSTM-CRF for Chinese NER task')
-parser.add_argument('--train_data', type=str, default='data_path', help='train data source')
-parser.add_argument('--test_data', type=str, default='data_path', help='test data source')
-parser.add_argument('--batch_size', type=int, default=64, help='#sample of each minibatch')
-parser.add_argument('--epoch', type=int, default=40, help='#epoch of training')
-parser.add_argument('--hidden_dim', type=int, default=300, help='#dim of hidden state')
-parser.add_argument('--optimizer', type=str, default='Adam', help='Adam/Adadelta/Adagrad/RMSProp/Momentum/SGD')
-parser.add_argument('--CRF', type=str2bool, default=True, help='use CRF at the top layer. if False, use Softmax')
-parser.add_argument('--lr', type=float, default=0.001, help='learning rate')
-parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
-parser.add_argument('--dropout', type=float, default=0.5, help='dropout keep_prob')
-parser.add_argument('--update_embedding', type=str2bool, default=True, help='update embedding during training')
-parser.add_argument('--pretrain_embedding', type=str, default='random',
-                    help='use pretrained char embedding or init it randomly')
-parser.add_argument('--embedding_dim', type=int, default=300, help='random init char embedding_dim')
-parser.add_argument('--shuffle', type=str2bool, default=True, help='shuffle training data before each epoch')
-parser.add_argument('--mode', type=str, default='train', help='train/test/demo')
-parser.add_argument('--demo_model', type=str, default='1521112368', help='model for test and demo')
 
-parser.add_argument('--window_size', type=int, default=10, help='window_size')
-parser.add_argument('--strides', type=int, default=1, help='strides')
-parser.add_argument('--all_o_dropout', type=float, default=0.9, help='all-o-dropout rate')
-parser.add_argument('--resume', type=int, default=0, help='resume training @epoch, if already trained x, use x + 1')
+class Map(dict):
+    """
+    Example:
+    m = Map({'first_name': 'Eduardo'}, last_name='Pool', age=24, sports=['Soccer'])
+    """
 
-args = parser.parse_args()
+    def __init__(self, *args, **kwargs):
+        super(Map, self).__init__(*args, **kwargs)
+        for arg in args:
+            if isinstance(arg, dict):
+                for k, v in arg.items():
+                    self[k] = v
 
-args.mode = 'train'
-args.window_size = 0
-args.epoch = 10
+        if kwargs:
+            for k, v in kwargs.items():
+                self[k] = v
+
+    def __getattr__(self, attr):
+        return self.get(attr)
+
+    def __setattr__(self, key, value):
+        self.__setitem__(key, value)
+
+    def __setitem__(self, key, value):
+        super(Map, self).__setitem__(key, value)
+        self.__dict__.update({key: value})
+
+    def __delattr__(self, item):
+        self.__delitem__(item)
+
+    def __delitem__(self, key):
+        super(Map, self).__delitem__(key)
+        del self.__dict__[key]
+
+
+args = Map({'train_data': 'data_path', 'test_data': 'data_path', 'batch_size': 64, 'epoch': 10, 'hidden_dim': 300,
+            'optimizer': 'Adam', 'CRF': True, 'lr': 0.001, 'clip': 5.0, 'dropout': 0.5, 'update_embedding': True,
+            'pretrain_embedding': 'random', 'embedding_dim': 300, 'shuffle': True, 'mode': 'train',
+            'demo_model': '1521112368', 'window_size': 0, 'strides': 1, 'all_o_dropout': 0.9, 'resume': 0,
+            'tag2label': 'data_path'})
+
+args.mode = 'demo'
+args.demo_model = '1561963360'
 
 ## get char embeddings
 word2id = read_dictionary(os.path.join('.', args.train_data, 'word2id.pkl'))
@@ -77,6 +95,9 @@ if not os.path.exists(result_path): os.makedirs(result_path)
 log_path = os.path.join(result_path, "log.txt")
 paths['log_path'] = log_path
 get_logger(log_path).info(str(args))
+
+init_tag2label(args.tag2label)
+from data import tag2label
 
 ## training model
 if args.mode == 'train':
@@ -120,8 +141,8 @@ elif args.mode == 'demo':
         print('============= demo =============')
         saver.restore(sess, ckpt_file)
         while 1:
-            print('Please input your sentence:')
-            demo_sent = input()
+            print('Please input your sentence (pre-process):')
+            demo_sent = preprocess_input_with_properties([input()])[0]
             if demo_sent == '' or demo_sent.isspace():
                 print('See you next time!')
                 break
@@ -131,3 +152,4 @@ elif args.mode == 'demo':
                 tag = model.demo_one(sess, demo_data)
                 LBL = get_entity(tag, demo_sent)
                 print('LBL: {}'.format(LBL))
+                print('LBL(set): {}'.format(set(LBL)))

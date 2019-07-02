@@ -3,14 +3,14 @@ import numpy as np
 import os, argparse, time, random
 from model import BiLSTM_CRF
 from utils import str2bool, get_logger, get_entity
-from data import read_corpus, read_dictionary, tag2label, random_embedding
+from data import read_corpus, read_dictionary, tag2label, random_embedding, init_tag2label
 
 ## Session configuration
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # default: 0
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
-config.gpu_options.per_process_gpu_memory_fraction = 0.7  # need ~700MB GPU memory
+config.gpu_options.per_process_gpu_memory_fraction = 1.0  # need ~700MB GPU memory
 
 ## hyperparameters
 parser = argparse.ArgumentParser(description='BiLSTM-CRF for Chinese NER task')
@@ -36,6 +36,7 @@ parser.add_argument('--window_size', type=int, default=10, help='window_size')
 parser.add_argument('--strides', type=int, default=1, help='strides')
 parser.add_argument('--all_o_dropout', type=float, default=0.9, help='all-o-dropout rate')
 parser.add_argument('--resume', type=int, default=0, help='resume training @epoch, if already trained x, use x + 1')
+parser.add_argument('--tag2label', type=str, default='data_path', help='tag2label')
 
 args = parser.parse_args()
 
@@ -73,6 +74,8 @@ if not os.path.exists(result_path): os.makedirs(result_path)
 log_path = os.path.join(result_path, "log.txt")
 paths['log_path'] = log_path
 get_logger(log_path).info(str(args))
+
+init_tag2label(args.tag2label)
 
 ## training model
 if args.mode == 'train':

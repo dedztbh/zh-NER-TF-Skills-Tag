@@ -1,10 +1,15 @@
 import sys, pickle, os, random
 import numpy as np
-import pickle
 
 ## tags, BIO
-with open('data_path/tag2label.pkl', 'rb') as f:
-    tag2label = pickle.load(f)
+
+tag2label = {}
+
+
+def init_tag2label(data_path):
+    global tag2label
+    with open(os.path.join(data_path, 'tag2label.pkl'), 'rb') as f:
+        tag2label = pickle.load(f)
 
 
 def read_corpus(corpus_path):
@@ -44,10 +49,10 @@ def vocab_build(vocab_path, corpus_path, min_count):
         for word in sent_:
             if word.isdigit():
                 word = '<NUM>'
-            elif ('\u0041' <= word <='\u005a') or ('\u0061' <= word <='\u007a'):
+            elif ('\u0041' <= word <= '\u005a') or ('\u0061' <= word <= '\u007a'):
                 word = '<ENG>'
             if word not in word2id:
-                word2id[word] = [len(word2id)+1, 1]
+                word2id[word] = [len(word2id) + 1, 1]
             else:
                 word2id[word][1] += 1
     low_freq_words = []
@@ -122,7 +127,7 @@ def pad_sequences(sequences, pad_mark=0, max_len=None):
     :return:
     """
     if max_len is None:
-        max_len = max(map(lambda x : len(x), sequences))
+        max_len = max(map(lambda x: len(x), sequences))
     seq_list, seq_len_list = [], []
     for seq in sequences:
         seq = list(seq)
