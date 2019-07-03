@@ -4,7 +4,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from data import read_corpus, read_dictionary, random_embedding, init_tag2label
+from data import read_corpus, read_dictionary, random_embedding, tag2label
 from extract_util import preprocess_input_with_properties
 from model import BiLSTM_CRF
 from utils import get_logger, get_entity
@@ -72,7 +72,7 @@ args = Map({'train_data': 'data_path',
             'strides': 1,
             'all_o_dropout': 0.9,
             'resume': 0,
-            'tag2label': 'data_path'})
+            'prop2label': 'data_path'})
 
 args.mode = 'train'
 args.window_size = 11
@@ -119,9 +119,6 @@ log_path = os.path.join(result_path, "log.txt")
 paths['log_path'] = log_path
 get_logger(log_path).info(str(args))
 
-init_tag2label(args.tag2label)
-from data import tag2label
-
 ## training model
 if args.mode == 'train':
     if args.resume > 0:
@@ -129,7 +126,8 @@ if args.mode == 'train':
         print(ckpt_file)
         paths['model_path'] = ckpt_file
 
-    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config, prop_embeddings=prop_embeddings)
+    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config, prop_embeddings=prop_embeddings,
+                       prop2label=prop2id)
     model.build_graph()
 
     ## hyperparameters-tuning, split train/dev
@@ -147,7 +145,8 @@ elif args.mode == 'test':
     ckpt_file = tf.train.latest_checkpoint(model_path)
     print(ckpt_file)
     paths['model_path'] = ckpt_file
-    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config, prop_embeddings=prop_embeddings)
+    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config, prop_embeddings=prop_embeddings,
+                       prop2label=prop2id)
     model.build_graph()
     print("test data: {}".format(test_size))
     model.test(test_data)
@@ -157,7 +156,8 @@ elif args.mode == 'demo':
     ckpt_file = tf.train.latest_checkpoint(model_path)
     print(ckpt_file)
     paths['model_path'] = ckpt_file
-    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config, prop_embeddings=prop_embeddings)
+    model = BiLSTM_CRF(args, embeddings, tag2label, word2id, paths, config=config, prop_embeddings=prop_embeddings,
+                       prop2label=prop2id)
     model.build_graph()
     saver = tf.train.Saver()
     with tf.Session(config=config) as sess:

@@ -1,4 +1,3 @@
-import numpy as np
 import os, time, sys
 import tensorflow as tf
 from tensorflow.contrib.rnn import LSTMCell
@@ -12,7 +11,7 @@ import re
 
 
 class BiLSTM_CRF(object):
-    def __init__(self, args, embeddings, tag2label, vocab, paths, config, prop_embeddings=None):
+    def __init__(self, args, embeddings, tag2label, vocab, paths, config, prop_embeddings=None, prop2label=None):
         self.batch_size = args.batch_size
         self.epoch_num = args.epoch
         self.hidden_dim = args.hidden_dim
@@ -40,6 +39,7 @@ class BiLSTM_CRF(object):
 
         self.prop_embeddings = prop_embeddings
         self.w_prop_embeddings = prop_embeddings is not None
+        self.prop2label = prop2label
 
     def build_graph(self):
         self.add_placeholders()
@@ -221,7 +221,8 @@ class BiLSTM_CRF(object):
         :return:
         """
         label_list = []
-        for seqs, labels in batch_yield(sent, self.batch_size, self.vocab, self.tag2label, shuffle=False):
+        for seqs, labels in batch_yield(sent, self.batch_size, self.vocab, self.tag2label, shuffle=False,
+                                        w_prop_embedding=self.w_prop_embeddings, prop2label=self.prop2label):
             label_list_, _ = self.predict_one_batch(sess, seqs)
             label_list.extend(label_list_)
         label2tag = {}

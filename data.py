@@ -3,13 +3,9 @@ import numpy as np
 
 ## tags, BIO
 
-tag2label = {}
-
-
-def init_tag2label(data_path):
-    global tag2label
-    with open(os.path.join(data_path, 'tag2label.pkl'), 'rb') as f:
-        tag2label = pickle.load(f)
+tag2label = {
+    'O': 0, 'B-LBL': 1, 'I-LBL': 2
+}
 
 
 def read_corpus(corpus_path, w_prop_embedding=False):
@@ -308,9 +304,10 @@ def to_sliding_window_w_prop_embedding(sequences, window_size, all_O_dropout_rat
         return seqs_result, props_result, None, seq_lens_result
 
 
-def batch_yield(data, batch_size, vocab, tag2label, shuffle=False, w_prop_embedding=False):
+def batch_yield(data, batch_size, vocab, tag2label, shuffle=False, w_prop_embedding=False, prop2label=None):
     """
 
+    :param prop2label:
     :param w_prop_embedding:
     :param data:
     :param batch_size:
@@ -324,7 +321,7 @@ def batch_yield(data, batch_size, vocab, tag2label, shuffle=False, w_prop_embedd
 
     seqs, labels = [], []
     for (sent_, tag_) in data:
-        sent_ = sentence2id(sent_, vocab, w_prop_embedding=w_prop_embedding)
+        sent_ = sentence2id(sent_, vocab, w_prop_embedding=w_prop_embedding, prop2id=prop2label)
         label_ = [tag2label[tag] for tag in tag_]
 
         if len(seqs) == batch_size:
