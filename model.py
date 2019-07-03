@@ -228,8 +228,8 @@ class BiLSTM_CRF(object):
         batches = batch_yield(train, self.batch_size, self.vocab, self.tag2label, shuffle=self.shuffle)
         for step, (seqs, labels) in enumerate(batches):
 
-            sys.stdout.write(' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
-            # print(' processing: {} batch / {} batches.'.format(step + 1, num_batches))
+            # (' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
+            print(' processing: {} batch / {} batches.'.format(step + 1, num_batches))
             step_num = epoch * num_batches + step + 1
             feed_dict, _ = self.get_feed_dict(seqs, labels, self.lr, self.dropout_keep_prob,
                                               no_window=self.window_size < 1)

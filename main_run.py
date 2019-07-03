@@ -52,14 +52,34 @@ class Map(dict):
         del self.__dict__[key]
 
 
-args = Map({'train_data': 'data_path', 'test_data': 'data_path', 'batch_size': 64, 'epoch': 10, 'hidden_dim': 300,
-            'optimizer': 'Adam', 'CRF': True, 'lr': 0.001, 'clip': 5.0, 'dropout': 0.5, 'update_embedding': True,
-            'pretrain_embedding': 'random', 'embedding_dim': 300, 'shuffle': True, 'mode': 'train',
-            'demo_model': '1521112368', 'window_size': 0, 'strides': 1, 'all_o_dropout': 0.9, 'resume': 0,
+args = Map({'train_data': 'data_path',
+            'test_data': 'data_path',
+            'batch_size': 64,
+            'epoch': 10,
+            'hidden_dim': 300,
+            'optimizer': 'Adam',
+            'CRF': True,
+            'lr': 0.001,
+            'clip': 5.0,
+            'dropout': 0.5,
+            'update_embedding': True,
+            'pretrain_embedding': 'random',
+            'embedding_dim': 300,
+            'shuffle': True,
+            'mode': 'train',
+            'demo_model': '1521112368',
+            'window_size': 0,
+            'strides': 1,
+            'all_o_dropout': 0.9,
+            'resume': 0,
             'tag2label': 'data_path'})
 
 args.mode = 'demo'
-args.demo_model = '1561963360'
+args.window_size = 11
+args.epoch = 20
+args.batch_size = 128
+args.demo_model = os.path.join('p', '1561963360')
+args.train_data = 'data_path_save/p'
 
 ## get char embeddings
 word2id = read_dictionary(os.path.join('.', args.train_data, 'word2id.pkl'))
@@ -80,7 +100,7 @@ if args.mode != 'demo':
 ## paths setting
 paths = {}
 timestamp = str(int(time.time())) if args.mode == 'train' and args.resume <= 0 else args.demo_model
-output_path = os.path.join('.', args.train_data + "_save", timestamp)
+output_path = os.path.join('.', "data_path_save", timestamp)
 if not os.path.exists(output_path): os.makedirs(output_path)
 summary_path = os.path.join(output_path, "summaries")
 paths['summary_path'] = summary_path
