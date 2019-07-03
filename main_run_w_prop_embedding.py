@@ -72,7 +72,8 @@ args = Map({'train_data': 'data_path',
             'strides': 1,
             'all_o_dropout': 0.9,
             'resume': 0,
-            'prop2label': 'data_path'})
+            'w_prop_embeddings': True
+            })
 
 args.mode = 'train'
 args.window_size = 11
@@ -89,15 +90,19 @@ else:
     embedding_path = 'pretrain_embedding.npy'
     embeddings = np.array(np.load(embedding_path), dtype='float32')
 
-prop2id = read_dictionary(os.path.join('.', args.train_data, 'prop2id.pkl'))
-prop_embeddings = random_embedding(prop2id, args.embedding_dim)
+prop2id = None
+prop_embeddings = None
+if args.w_prop_embeddings:
+    prop2id = read_dictionary(os.path.join('.', args.train_data, 'prop2label.pkl'))
+    prop_embeddings = random_embedding(prop2id, args.embedding_dim)
+
 
 ## read corpus and get training data
 if args.mode != 'demo':
     train_path = os.path.join('.', args.train_data, 'train_data')
     test_path = os.path.join('.', args.test_data, 'test_data')
-    train_data = read_corpus(train_path)
-    test_data = read_corpus(test_path)
+    train_data = read_corpus(train_path, args.w_prop_embeddings)
+    test_data = read_corpus(test_path, args.w_prop_embeddings)
     test_size = len(test_data)
 
 ## paths setting

@@ -79,7 +79,7 @@ class BiLSTM_CRF(object):
                 prop_embeddings = tf.nn.embedding_lookup(params=_prop_embeddings,
                                                          ids=self.prop_ids,
                                                          name="prop_embeddings")
-            _joined_embeddings = tf.concat([word_embeddings, prop_embeddings], 1)
+            _joined_embeddings = tf.concat([word_embeddings, prop_embeddings], -1)
         else:
             _joined_embeddings = word_embeddings
 
@@ -246,8 +246,7 @@ class BiLSTM_CRF(object):
 
         start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
         batches = batch_yield(train, self.batch_size, self.vocab, self.tag2label,
-                              shuffle=self.shuffle,
-                              w_prop_embedding=self.w_prop_embeddings)
+                              shuffle=self.shuffle, w_prop_embedding=self.w_prop_embeddings, prop2label=self.prop2label)
         for step, (seqs, labels) in enumerate(batches):
 
             sys.stdout.write(' processing: {} batch / {} batches.'.format(step + 1, num_batches) + '\r')
@@ -330,7 +329,7 @@ class BiLSTM_CRF(object):
         """
         label_list, seq_len_list = [], []
         for seqs, labels in batch_yield(dev, self.batch_size, self.vocab, self.tag2label, shuffle=False,
-                                        w_prop_embedding=self.w_prop_embeddings):
+                                        w_prop_embedding=self.w_prop_embeddings, prop2label=self.prop2label):
             label_list_, seq_len_list_ = self.predict_one_batch(sess, seqs)
             label_list.extend(label_list_)
             seq_len_list.extend(seq_len_list_)

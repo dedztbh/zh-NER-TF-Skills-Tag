@@ -165,19 +165,20 @@ def pad_sequences_w_prop_embedding(sequences, pad_mark=0, max_len=None):
     """
     if max_len is None:
         max_len = max(map(lambda x: len(x), sequences))
-    seq_list, prop_list, seq_len_list = [], [], []
-    for seq, prop in sequences:
+    seq_list, props_list, seq_len_list = [], [], []
+    for seq in sequences:
+        [seq, props] = tuple_array_to_ndarray(seq, 2)
         seq = list(seq)
         seq_ = seq[:max_len] + [pad_mark] * max(max_len - len(seq), 0)
         seq_list.append(seq_)
 
-        prop = list(prop)
-        prop_ = prop[:max_len] + [pad_mark] * max(max_len - len(prop), 0)
-        prop_list.append(prop_)
+        props = list(props)
+        props_ = props[:max_len] + [pad_mark] * max(max_len - len(props), 0)
+        props_list.append(props_)
 
         seq_len_list.append(min(len(seq), max_len))
 
-    return seq_list, prop_list, seq_len_list
+    return seq_list, props_list, seq_len_list
 
 
 def to_sliding_window(sequences, window_size, all_O_dropout_rate, strides, labels=None, tag2label=None,
