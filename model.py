@@ -33,6 +33,7 @@ class BiLSTM_CRF(object):
         self.config = config
 
         self.window_size = args.window_size
+        self.no_window = self.window_size < 1
         self.strides = args.strides
         self.all_o_dropout = args.all_o_dropout
         self.resume = args.resume
@@ -40,6 +41,9 @@ class BiLSTM_CRF(object):
         self.prop_embeddings = prop_embeddings
         self.w_prop_embeddings = prop_embeddings is not None
         self.prop2label = prop2label
+
+        # if self.w_prop_embeddings:
+        #     self.hidden_dim *= 2
 
     def build_graph(self):
         self.add_placeholders()
@@ -253,7 +257,7 @@ class BiLSTM_CRF(object):
             # print(' processing: {} batch / {} batches.'.format(step + 1, num_batches))
             step_num = epoch * num_batches + step + 1
             feed_dict, _ = self.get_feed_dict(seqs, labels, self.lr, self.dropout_keep_prob,
-                                              no_window=self.window_size < 1, w_prop_embeddings=self.w_prop_embeddings)
+                                              no_window=self.no_window, w_prop_embeddings=self.w_prop_embeddings)
             _, loss_train, summary, step_num_ = sess.run([self.train_op, self.loss, self.merged, self.global_step],
                                                          feed_dict=feed_dict)
             if step + 1 == 1 or (step + 1) % 300 == 0 or step + 1 == num_batches:
@@ -391,6 +395,7 @@ class BiLSTM_CRF(object):
 
         for _ in lines:
             self.logger.info(_)
+            print(_)
 
         lbl_line = next(filter(lambda l: 'LBL' in l, lines))
 

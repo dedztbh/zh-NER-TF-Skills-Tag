@@ -239,7 +239,7 @@ def to_sliding_window(sequences, window_size, all_O_dropout_rate, strides, label
 
 
 def to_sliding_window_w_prop_embedding(sequences, window_size, all_O_dropout_rate, strides, labels=None, tag2label=None,
-                             pad_mark=0):
+                                       pad_mark=0):
     if tag2label is None:
         tag2label = {"O": 0}
     seqs_result, props_result, seq_lens_result = [], [], []
@@ -341,4 +341,17 @@ def tuple_array_to_ndarray(tuple_array, len_tuple):
     for t in tuple_array:
         for i, item in enumerate(t):
             result[i].append(item)
+    return result
+
+
+def ndarray_to_tuple_array(ndarray, len_tuple=None):
+    if len_tuple is None:
+        len_tuple = len(ndarray)
+    assert len(ndarray) == len_tuple
+    result = []
+    for c in range(len(ndarray[0])):
+        array_to_become_tuple = []
+        for r in range(len_tuple):
+            array_to_become_tuple.append(ndarray[r][c])
+        result.append(tuple(array_to_become_tuple))
     return result

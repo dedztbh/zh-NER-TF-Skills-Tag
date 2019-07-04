@@ -4,8 +4,9 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from data import read_corpus, read_dictionary, random_embedding, tag2label
-from extract_util import preprocess_input_with_properties
+from data import read_corpus, read_dictionary, random_embedding, tag2label, tuple_array_to_ndarray, \
+    ndarray_to_tuple_array
+from extract_util import preprocess_input_with_properties, preprocess_input_w_prop_embeddings
 from model import BiLSTM_CRF
 from utils import get_logger, get_entity
 
@@ -75,12 +76,13 @@ args = Map({'train_data': 'data_path',
             'w_prop_embeddings': True
             })
 
-args.mode = 'train'
-args.window_size = 11
-args.epoch = 20
-args.batch_size = 128
-# args.demo_model = os.path.join('p', '1561963360')
-# args.train_data = 'data_path_save/p'
+args.mode = 'demo'
+args.window_size = 0
+args.epoch = 10
+# args.all_o_dropout = 0.5
+args.batch_size = 32
+args.demo_model = '1562225252'
+args.hidden_dim = 600
 
 ## get char embeddings
 word2id = read_dictionary(os.path.join('.', args.train_data, 'word2id.pkl'))
@@ -95,7 +97,6 @@ prop_embeddings = None
 if args.w_prop_embeddings:
     prop2id = read_dictionary(os.path.join('.', args.train_data, 'prop2label.pkl'))
     prop_embeddings = random_embedding(prop2id, args.embedding_dim)
-
 
 ## read corpus and get training data
 if args.mode != 'demo':
@@ -170,13 +171,15 @@ elif args.mode == 'demo':
         saver.restore(sess, ckpt_file)
         while 1:
             print('Please input your sentence (pre-process):')
-            demo_sent = preprocess_input_with_properties([input()])[0]
+            processed_tuple_array = preprocess_input_w_prop_embeddings([input()])[0]
+            [demo_sent, props] = tuple_array_to_ndarray(processed_tuple_array, 2)
+            demo_sent = ''.join(demo_sent)
             if demo_sent == '' or demo_sent.isspace():
                 print('See you next time!')
                 break
             else:
                 demo_sent = list(demo_sent.strip())
-                demo_data = [(demo_sent, ['O'] * len(demo_sent))]
+                demo_data = [(ndarray_to_tuple_array([demo_sent, props], 2), ['O'] * len(demo_sent))]
                 tag = model.demo_one(sess, demo_data)
                 LBL = get_entity(tag, demo_sent)
                 print('LBL: {}'.format(LBL))
