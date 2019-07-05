@@ -16,21 +16,20 @@ def read_corpus(corpus_path, w_prop_embedding=False):
     """
     data = []
     with open(corpus_path, encoding='utf-8') as fr:
-        lines = fr.readlines()
-    sent_, tag_ = [], []
-    for line in lines:
-        if line != '\n':
-            spliced = line.strip().split()
-            if w_prop_embedding:
-                [char, prop, label] = spliced
-                sent_.append((char, prop))
+        sent_, tag_ = [], []
+        for line in fr.readlines():
+            if line != '\n':
+                spliced = line.strip().split()
+                if w_prop_embedding:
+                    [char, prop, label] = spliced
+                    sent_.append((char, prop))
+                else:
+                    [char, label] = spliced
+                    sent_.append(char)
+                tag_.append(label)
             else:
-                [char, label] = spliced
-                sent_.append(char)
-            tag_.append(label)
-        else:
-            data.append((sent_, tag_))
-            sent_, tag_ = [], []
+                data.append((sent_, tag_))
+                sent_, tag_ = [], []
 
     return data
 
