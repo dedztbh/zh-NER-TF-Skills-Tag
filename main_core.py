@@ -10,7 +10,7 @@ from data import read_corpus, read_dictionary, random_embedding, tuple_array_to_
 from data import tag2label as tag2label_orig
 from extract_util import preprocess_input_w_prop_embeddings, preprocess_input_with_properties
 from model import BiLSTM_CRF
-from utils import get_logger, get_entity
+from utils import get_logger, get_entity, discovered_words
 
 
 def main_core(args):
@@ -117,18 +117,19 @@ def main_core(args):
                 print('Please input your sentence (pre-process):')
                 if args.w_prop_embeddings:
                     processed_tuple_array = preprocess_input_w_prop_embeddings([input()])[0]
-                    [demo_sent, props] = tuple_array_to_ndarray(processed_tuple_array, 2)
+                    [demo_sent, props] = tuple_array_to_ndarray(processed_tuple_array)
                     demo_sent = ''.join(demo_sent)
                     if demo_sent == '' or demo_sent.isspace():
                         print('See you next time!')
                         break
                     else:
                         demo_sent = list(demo_sent.strip())
-                        demo_data = [(ndarray_to_tuple_array([demo_sent, props], 2), ['O'] * len(demo_sent))]
+                        demo_data = [(ndarray_to_tuple_array([demo_sent, props]), ['O'] * len(demo_sent))]
                         tag = model.demo_one(sess, demo_data)
                         LBL = get_entity(tag, demo_sent)
-                        print('LBL: {}'.format(LBL))
+                        # print('LBL: {}'.format(LBL))
                         print('LBL(set): {}'.format(set(LBL)))
+                        print('Discovered: {}'.format(discovered_words(set(LBL))))
                 else:
                     demo_sent = preprocess_input_with_properties([input()])[0]
                     if demo_sent == '' or demo_sent.isspace():
@@ -139,5 +140,6 @@ def main_core(args):
                         demo_data = [(demo_sent, ['O'] * len(demo_sent))]
                         tag = model.demo_one(sess, demo_data)
                         LBL = get_entity(tag, demo_sent)
-                        print('LBL: {}'.format(LBL))
+                        # print('LBL: {}'.format(LBL))
                         print('LBL(set): {}'.format(set(LBL)))
+                        print('Discovered: {}'.format(discovered_words(set(LBL))))

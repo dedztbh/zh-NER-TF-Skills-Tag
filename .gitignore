@@ -5,3 +5,4 @@ data_path/train_data
 data_path/test_data
 data_path/tag2label.pkl
 data_path_save/
+existing_labels

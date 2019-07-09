@@ -166,7 +166,7 @@ def pad_sequences_w_prop_embedding(sequences, pad_mark=0, max_len=None):
         max_len = max(map(lambda x: len(x), sequences))
     seq_list, props_list, seq_len_list = [], [], []
     for seq in sequences:
-        [seq, props] = tuple_array_to_ndarray(seq, 2)
+        [seq, props] = tuple_array_to_ndarray(seq)
         seq = list(seq)
         seq_ = seq[:max_len] + [pad_mark] * max(max_len - len(seq), 0)
         seq_list.append(seq_)
@@ -262,7 +262,7 @@ def to_sliding_window_w_prop_embedding(sequences, window_size, all_O_dropout_rat
                     label_window = label[i:i + window_size]
                     if not (all(v == negative_label for v in label_window)
                             and np.random.rand() <= all_O_dropout_rate):
-                        [seq_window, prop_window] = tuple_array_to_ndarray(seq_window, 2)
+                        [seq_window, prop_window] = tuple_array_to_ndarray(seq_window)
                         seqs_result.append(seq_window)
                         props_result.append(prop_window)
                         labels_result.append(label_window)
@@ -273,7 +273,7 @@ def to_sliding_window_w_prop_embedding(sequences, window_size, all_O_dropout_rat
                     label_window = label[seq_len - window_size:seq_len]
                     if not (all(v == negative_label for v in label_window)
                             and np.random.rand() <= all_O_dropout_rate):
-                        [seq_window, prop_window] = tuple_array_to_ndarray(seq_window, 2)
+                        [seq_window, prop_window] = tuple_array_to_ndarray(seq_window)
                         seqs_result.append(seq_window)
                         props_result.append(prop_window)
                         labels_result.append(label_window)
@@ -291,13 +291,13 @@ def to_sliding_window_w_prop_embedding(sequences, window_size, all_O_dropout_rat
                 i = 0
                 while i + window_size < seq_len:
                     seq_window = seq[i:i + window_size]
-                    [seq_window, prop_window] = tuple_array_to_ndarray(seq_window, 2)
+                    [seq_window, prop_window] = tuple_array_to_ndarray(seq_window)
                     seqs_result.append(seq_window)
                     props_result.append(prop_window)
                     i += strides
                 if i + window_size > seq_len:
                     seq_window = seq[seq_len - window_size:seq_len]
-                    [seq_window, prop_window] = tuple_array_to_ndarray(seq_window, 2)
+                    [seq_window, prop_window] = tuple_array_to_ndarray(seq_window)
                     seqs_result.append(seq_window)
                     props_result.append(prop_window)
                     seq_lens_result.append(window_size)
@@ -335,22 +335,13 @@ def batch_yield(data, batch_size, vocab, tag2label, shuffle=False, w_prop_embedd
         yield seqs, labels
 
 
-def tuple_array_to_ndarray(tuple_array, len_tuple):
-    result = [[] for _ in range(len_tuple)]
-    for t in tuple_array:
-        for i, item in enumerate(t):
-            result[i].append(item)
-    return result
+def tuple_array_to_ndarray(tuple_array):
+    return tuple_array_transpose(tuple_array)
 
 
-def ndarray_to_tuple_array(ndarray, len_tuple=None):
-    if len_tuple is None:
-        len_tuple = len(ndarray)
-    assert len(ndarray) == len_tuple
-    result = []
-    for c in range(len(ndarray[0])):
-        array_to_become_tuple = []
-        for r in range(len_tuple):
-            array_to_become_tuple.append(ndarray[r][c])
-        result.append(tuple(array_to_become_tuple))
-    return result
+def ndarray_to_tuple_array(ndarray):
+    return tuple_array_transpose(ndarray)
+
+
+def tuple_array_transpose(m):
+    return list(zip(*m))

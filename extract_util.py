@@ -74,7 +74,7 @@ def preprocess_input_w_prop_embeddings(strs):
 
         assert len(x) == len(prop_labels)
 
-        return ndarray_to_tuple_array([list(x), prop_labels], 2)
+        return ndarray_to_tuple_array([list(x), prop_labels])
 
     def clean_desc(s):
         s = desc_clean_clean(s)

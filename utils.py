@@ -1,4 +1,6 @@
-import logging, sys, argparse
+import argparse
+import logging
+import os
 
 
 def str2bool(v):
@@ -12,80 +14,8 @@ def str2bool(v):
 
 
 def get_entity(tag_seq, char_seq):
-    # PER = get_PER_entity(tag_seq, char_seq)
-    # LOC = get_LOC_entity(tag_seq, char_seq)
-    # ORG = get_ORG_entity(tag_seq, char_seq)
-    # return PER, LOC, ORG
     return get_LBL_entity(tag_seq, char_seq)
 
-
-# def get_PER_entity(tag_seq, char_seq):
-#     length = len(char_seq)
-#     PER = []
-#     for i, (char, tag) in enumerate(zip(char_seq, tag_seq)):
-#         if tag == 'B-PER':
-#             if 'per' in locals().keys():
-#                 PER.append(per)
-#                 del per
-#             per = char
-#             if i+1 == length:
-#                 PER.append(per)
-#         if tag == 'I-PER':
-#             per += char
-#             if i+1 == length:
-#                 PER.append(per)
-#         if tag not in ['I-PER', 'B-PER']:
-#             if 'per' in locals().keys():
-#                 PER.append(per)
-#                 del per
-#             continue
-#     return PER
-#
-#
-# def get_LOC_entity(tag_seq, char_seq):
-#     length = len(char_seq)
-#     LOC = []
-#     for i, (char, tag) in enumerate(zip(char_seq, tag_seq)):
-#         if tag == 'B-LOC':
-#             if 'loc' in locals().keys():
-#                 LOC.append(loc)
-#                 del loc
-#             loc = char
-#             if i+1 == length:
-#                 LOC.append(loc)
-#         if tag == 'I-LOC':
-#             loc += char
-#             if i+1 == length:
-#                 LOC.append(loc)
-#         if tag not in ['I-LOC', 'B-LOC']:
-#             if 'loc' in locals().keys():
-#                 LOC.append(loc)
-#                 del loc
-#             continue
-#     return LOC
-#
-#
-# def get_ORG_entity(tag_seq, char_seq):
-#     length = len(char_seq)
-#     ORG = []
-#     for i, (char, tag) in enumerate(zip(char_seq, tag_seq)):
-#         if tag == 'B-ORG':
-#             if 'org' in locals().keys():
-#                 ORG.append(org)
-#                 del org
-#             org = char
-#             if i+1 == length:
-#                 ORG.append(org)
-#         if tag == 'I-ORG':
-#             org += char
-#             if i+1 == length:
-#                 ORG.append(org)
-#         if tag not in ['I-ORG', 'B-ORG']:
-#             if 'org' in locals().keys():
-#                 ORG.append(org)
-#                 del org
-#             continue
-#     return ORG
 
 def get_LBL_entity(tag_seq, char_seq):
     length = len(char_seq)
@@ -154,3 +84,13 @@ class Map(dict):
     def __delitem__(self, key):
         super(Map, self).__delitem__(key)
         del self.__dict__[key]
+
+
+existing_labels = set()
+if os.path.exists('existing_labels'):
+    with open('existing_labels', mode='r', encoding='utf8') as f:
+        existing_labels = eval(f.read())
+
+
+def discovered_words(result):
+    return result - existing_labels
