@@ -27,9 +27,10 @@ args = Map({'train_data': 'data_path',
 args.mode = 'demo'
 args.window_size = 0
 args.epoch = 10
-# args.all_o_dropout = 0.5
-args.batch_size = 32
-args.demo_model = '1562225252'
-args.hidden_dim = 600
+args.batch_size = 64
+args.clip = 5.0
+# args.dropout = 0.1
+args.demo_model = 'h128'
+args.hidden_dim = 128
 
 main_core(args)

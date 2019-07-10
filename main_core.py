@@ -115,31 +115,27 @@ def main_core(args):
             saver.restore(sess, ckpt_file)
             while 1:
                 print('Please input your sentence (pre-process):')
+                input_msg = input()
+                if input_msg == '' or input_msg.isspace():
+                    print('See you next time!')
+                    break
                 if args.w_prop_embeddings:
-                    processed_tuple_array = preprocess_input_w_prop_embeddings([input()])[0]
+                    processed_tuple_array = preprocess_input_w_prop_embeddings([input_msg])[0]
                     [demo_sent, props] = tuple_array_to_ndarray(processed_tuple_array)
                     demo_sent = ''.join(demo_sent)
-                    if demo_sent == '' or demo_sent.isspace():
-                        print('See you next time!')
-                        break
-                    else:
-                        demo_sent = list(demo_sent.strip())
-                        demo_data = [(ndarray_to_tuple_array([demo_sent, props]), ['O'] * len(demo_sent))]
-                        tag = model.demo_one(sess, demo_data)
-                        LBL = get_entity(tag, demo_sent)
-                        # print('LBL: {}'.format(LBL))
-                        print('LBL(set): {}'.format(set(LBL)))
-                        print('Discovered: {}'.format(discovered_words(set(LBL))))
+                    demo_sent = list(demo_sent.strip())
+                    demo_data = [(ndarray_to_tuple_array([demo_sent, props]), ['O'] * len(demo_sent))]
+                    tag = model.demo_one(sess, demo_data)
+                    LBL = get_entity(tag, demo_sent)
+                    # print('LBL: {}'.format(LBL))
+                    print('LBL(set): {}'.format(set(LBL)))
+                    print('Discovered: {}'.format(discovered_words(set(LBL))))
                 else:
-                    demo_sent = preprocess_input_with_properties([input()])[0]
-                    if demo_sent == '' or demo_sent.isspace():
-                        print('See you next time!')
-                        break
-                    else:
-                        demo_sent = list(demo_sent.strip())
-                        demo_data = [(demo_sent, ['O'] * len(demo_sent))]
-                        tag = model.demo_one(sess, demo_data)
-                        LBL = get_entity(tag, demo_sent)
-                        # print('LBL: {}'.format(LBL))
-                        print('LBL(set): {}'.format(set(LBL)))
-                        print('Discovered: {}'.format(discovered_words(set(LBL))))
+                    demo_sent = preprocess_input_with_properties([input_msg])[0]
+                    demo_sent = list(demo_sent.strip())
+                    demo_data = [(demo_sent, ['O'] * len(demo_sent))]
+                    tag = model.demo_one(sess, demo_data)
+                    LBL = get_entity(tag, demo_sent)
+                    # print('LBL: {}'.format(LBL))
+                    print('LBL(set): {}'.format(set(LBL)))
+                    print('Discovered: {}'.format(discovered_words(set(LBL))))

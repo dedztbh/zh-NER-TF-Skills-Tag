@@ -54,6 +54,8 @@ def preprocess_input_w_prop_embeddings(strs):
         seg_result = a2g(seg_result)
         prop_labels = []
 
+        new_x = ''
+
         seg_word = ''
         properti = ''
         begin = True
@@ -71,6 +73,9 @@ def preprocess_input_w_prop_embeddings(strs):
             mark = mark_prefix + properti.upper()
             prop_labels.append(mark)
             seg_word = seg_word[1:]
+            new_x += ch.upper()
+
+        x = new_x
 
         assert len(x) == len(prop_labels)
 
