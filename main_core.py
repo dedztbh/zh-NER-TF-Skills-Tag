@@ -4,13 +4,16 @@ import os
 
 import numpy as np
 import tensorflow as tf
+from scipy.special import softmax
 
 from data import read_corpus, read_dictionary, random_embedding, tuple_array_to_ndarray, \
     ndarray_to_tuple_array
 from data import tag2label as tag2label_orig
 from extract_util import preprocess_input_w_prop_embeddings, preprocess_input_with_properties
 from model import BiLSTM_CRF
-from utils import get_logger, get_entity, discovered_words
+from utils import get_logger, get_entity, discovered_words, is_english
+
+allow_pos = ('j', 'vn', 'ns', 'nr', 'eng', 'nt', 'b', 'q', 'ng', 'v', 'a', 'n', 'nz', 'i', 'l', 't')
 
 
 def main_core(args):
@@ -125,17 +128,33 @@ def main_core(args):
                     demo_sent = ''.join(demo_sent)
                     demo_sent = list(demo_sent.strip())
                     demo_data = [(ndarray_to_tuple_array([demo_sent, props]), ['O'] * len(demo_sent))]
-                    tag = model.demo_one(sess, demo_data)
-                    LBL = get_entity(tag, demo_sent)
-                    # print('LBL: {}'.format(LBL))
-                    print('LBL(set): {}'.format(set(LBL)))
-                    print('Discovered: {}'.format(discovered_words(set(LBL))))
                 else:
                     demo_sent = preprocess_input_with_properties([input_msg])[0]
                     demo_sent = list(demo_sent.strip())
                     demo_data = [(demo_sent, ['O'] * len(demo_sent))]
-                    tag = model.demo_one(sess, demo_data)
-                    LBL = get_entity(tag, demo_sent)
-                    # print('LBL: {}'.format(LBL))
-                    print('LBL(set): {}'.format(set(LBL)))
-                    print('Discovered: {}'.format(discovered_words(set(LBL))))
+                tag = model.demo_one(sess, demo_data)
+                LBL = get_entity(tag, demo_sent)
+                lbl_set = set(LBL)
+                try:
+                    import jieba.analyse
+                    the_str = ''.join(demo_sent)
+                    topK = 20
+                    weight_threshold = 0.7
+
+                    def filter_pair(pair):
+                        word, weight = pair
+                        return (len(word) > 2 or is_english(word)) and weight >= weight_threshold
+
+                    tfidf_tags = jieba.analyse.extract_tags(the_str, topK=topK, withWeight=True,
+                                                            allowPOS=allow_pos)
+                    [words, weights] = tuple_array_to_ndarray([(word, weight) for word, weight in tfidf_tags])
+                    tfidf_tags = ndarray_to_tuple_array([words, np.array(weights) / weights[0]])
+                    tfidf_tags = list(filter(filter_pair, tfidf_tags))
+                    tfidf_set = set([w for w, we in tfidf_tags])
+                    print('From TF-IDF: {}'.format(tfidf_set))
+
+                    lbl_set = lbl_set | tfidf_set
+                finally:
+                    pass
+                print('LBL(set): {}'.format(lbl_set))
+                print('Discovered: {}'.format(discovered_words(lbl_set)))

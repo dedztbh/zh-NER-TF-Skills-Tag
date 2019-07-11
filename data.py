@@ -336,7 +336,7 @@ def batch_yield(data, batch_size, vocab, tag2label, shuffle=False, w_prop_embedd
 
 
 def tuple_array_to_ndarray(tuple_array):
-    return tuple_array_transpose(tuple_array)
+    return [list(tupl) for tupl in tuple_array_transpose(tuple_array)]
 
 
 def ndarray_to_tuple_array(ndarray):

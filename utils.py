@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+import string
 
 
 def str2bool(v):
@@ -94,3 +95,11 @@ if os.path.exists('existing_labels'):
 
 def discovered_words(result):
     return result - existing_labels
+
+
+def is_letter(c):
+    return c in string.ascii_letters
+
+
+def is_english(word):
+    return all([is_letter(c) for c in word])
