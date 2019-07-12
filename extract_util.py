@@ -57,7 +57,7 @@ def preprocess_input_with_properties(strs, split=False):
     return strs
 
 
-def preprocess_input_w_prop_embeddings(strs):
+def preprocess_input_w_prop_embeddings(strs, simplify_label=True):
     def filter_words(x):
         seg_result = list(filter(filter_seg_result, pseg.cut(x)))
         x = ''.join([w for w, p in seg_result])
@@ -74,7 +74,8 @@ def preprocess_input_w_prop_embeddings(strs):
             if seg_word == '':
                 seg_word, properti = next(seg_result)
                 # simplify
-                properti = simplify_property(properti)
+                if simplify_label:
+                    properti = simplify_property(properti)
                 begin = True
             if begin:
                 mark_prefix = 'B-'

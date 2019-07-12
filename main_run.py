@@ -29,6 +29,11 @@ args.window_size = 0
 args.epoch = 10
 args.batch_size = 64
 args.clip = 5.0
+
+args.simplify_label = True
+args.tfidf_threshold = 0.75
+args.tfidf_topK = 20
+
 # args.dropout = 0.1
 args.demo_model = 'c1d0_2'
 

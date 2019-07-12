@@ -123,7 +123,8 @@ def main_core(args):
                     print('See you next time!')
                     break
                 if args.w_prop_embeddings:
-                    processed_tuple_array = preprocess_input_w_prop_embeddings([input_msg])[0]
+                    processed_tuple_array = \
+                        preprocess_input_w_prop_embeddings([input_msg], simplify_label=args.simplify_label)[0]
                     [demo_sent, props] = tuple_array_to_ndarray(processed_tuple_array)
                     demo_sent = ''.join(demo_sent)
                     demo_sent = list(demo_sent.strip())
@@ -138,8 +139,8 @@ def main_core(args):
                 try:
                     import jieba.analyse
                     the_str = ''.join(demo_sent)
-                    topK = 20
-                    weight_threshold = 0.7
+                    topK = args.tfidf_topK
+                    weight_threshold = args.tfidf_threshold
 
                     def filter_pair(pair):
                         word, weight = pair
